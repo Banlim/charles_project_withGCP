@@ -1,0 +1,2 @@
+include ':app'
+enableFeaturePreview('IMPROVED_POM_SUPPORT')
