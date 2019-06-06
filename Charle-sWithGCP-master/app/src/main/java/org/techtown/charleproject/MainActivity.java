@@ -14,6 +14,8 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
@@ -54,9 +56,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -76,9 +81,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         resultFile = new ArrayList<>();
         updateImageFileArr = new ArrayList<>();
-        // checkPermission();
+        //checkPermission();
         init();
 
+        /*
         Button button = (Button) findViewById(R.id.return_button);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -86,6 +92,15 @@ public class MainActivity extends AppCompatActivity {
                 finish();
             }
         });
+        */
+        Handler handler = new Handler(){
+            public void handleMessage(Message msg){
+                super.handleMessage(msg);
+                startActivity(new Intent(MainActivity.this, WebviewActivity.class));
+                finish();
+            }
+        };
+        handler.sendEmptyMessageDelayed(0, 10000);
 
     }
     public void hello(FirebaseVisionImage image, String date, String encode, String name){
@@ -237,6 +252,7 @@ public class MainActivity extends AppCompatActivity {
         String cacheFileName = "cacheFile.txt";
         String internalPath = this.getFilesDir().getAbsolutePath()+"/"+cacheFileName;
         File file = new File(internalPath);
+
         if(cacheFileName.equals(file.getName())){
             // 앱 처음 실행 시
             ImageCount = firstImagePathArrayCount(tempPath);
@@ -414,11 +430,11 @@ public class MainActivity extends AppCompatActivity {
         Log.d("person", "호잇");
         FirebaseVisionFaceDetector detector = FirebaseVision.getInstance().getVisionFaceDetector();
         Bitmap bitmap;
-        Bitmap bitmap1 = BitmapFactory.decodeFile(imageFileArray.get(4).getAbsolutePath());
-        ImageView imageView = (ImageView)findViewById(R.id.imageView);
-        String btEncode = image2base64(bitmap1);
-        Bitmap btDecode = decodeBase64(btEncode);
-        imageView.setImageBitmap(btDecode);
+       // Bitmap bitmap1 = BitmapFactory.decodeFile(imageFileArray.get(4).getAbsolutePath());
+        //ImageView imageView = (ImageView)findViewById(R.id.imageView);
+       // String btEncode = image2base64(bitmap1);
+       // Bitmap btDecode = decodeBase64(btEncode);
+        //imageView.setImageBitmap(btDecode);
 
         ExifInterface exif;
         for(int i = 0; i < imageFileArray.size(); i++) {
@@ -505,21 +521,27 @@ public class MainActivity extends AppCompatActivity {
             String boundary = "*****";
 
 
+            String tmpimage = imageEncode;
+            try {
+                tmpimage = URLEncoder.encode(imageEncode, StandardCharsets.UTF_8.name());
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
             // HTTP 메시지 본문에 포함되어 전송되기 때문에, 따로 데이터를 준비해야한다.
             // 전송할 데이터는 "이름=값" 형식이고, 여러 개를 보내야 할 경우에는 항목 사이에 &를 추가한다.
             // 여기에 적어준 이름은 나중에 php에서 사용하여 값을 얻게 된다.
-            String postParameters = "imageDate=" + imageDate + "&imageEncode=" + imageEncode + "&imageName=" + imageName;
+            String postParameters = "imageDate=" + imageDate + "&imageEncode=" + tmpimage + "&imageName=" + imageName;
 
             try{
                 // HttpURLConnection 클래스를 사용하여 POST 방식으로 데이터를 전송한다.
                 URL url = new URL(serverURL);
                 HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
 
-                httpURLConnection.setReadTimeout(5000); // 5초 안에 응답이 없으면 Exception
-                httpURLConnection.setConnectTimeout(5000); // 5초 안에 연결이 되지 않으면 Exception
+                httpURLConnection.setReadTimeout(20000); // 5초 안에 응답이 없으면 Exception
+                httpURLConnection.setConnectTimeout(20000); // 5초 안에 연결이 되지 않으면 Exception
                 httpURLConnection.setRequestMethod("POST"); // POST 방식으로 요청
-                httpURLConnection.setRequestProperty("Connection", "Keep-Alive");
-                httpURLConnection.setRequestProperty("Content-Type", "multipart/form-data;boundary="+boundary);
+                //httpURLConnection.setRequestProperty("Connection", "Keep-Alive");
+                //httpURLConnection.setRequestProperty("Content-Type", "multipart/form-data;boundary="+boundary);
                 httpURLConnection.connect();
 
 
